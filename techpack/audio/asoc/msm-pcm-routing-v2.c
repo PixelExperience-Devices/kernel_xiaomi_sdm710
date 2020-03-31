@@ -14428,15 +14428,18 @@ static int msm_routing_put_lsm_app_type_cfg_control(
 					struct snd_ctl_elem_value *ucontrol)
 {
 	int i = 0, j;
-	int num_app_types = ucontrol->value.integer.value[i++];
+	int num_app_types;
 
-	memset(lsm_app_type_cfg, 0, MAX_APP_TYPES*
-				sizeof(struct msm_pcm_routing_app_type_data));
-	if (num_app_types > MAX_APP_TYPES) {
+	if (ucontrol->value.integer.value[0] > MAX_APP_TYPES) {
 		pr_err("%s: number of app types exceed the max supported\n",
 			__func__);
 		return -EINVAL;
 	}
+
+	num_app_types = ucontrol->value.integer.value[i++];
+	memset(lsm_app_type_cfg, 0, MAX_APP_TYPES*
+	       sizeof(struct msm_pcm_routing_app_type_data));
+
 	for (j = 0; j < num_app_types; j++) {
 		lsm_app_type_cfg[j].app_type =
 				ucontrol->value.integer.value[i++];
@@ -19719,7 +19722,7 @@ static const struct snd_kcontrol_new aptx_dec_license_controls[] = {
 static int msm_routing_put_port_chmap_mixer(struct snd_kcontrol *kcontrol,
 					    struct snd_ctl_elem_value *ucontrol)
 {
-	uint8_t channel_map[PCM_FORMAT_MAX_NUM_CHANNEL];
+	uint8_t channel_map[PCM_FORMAT_MAX_NUM_CHANNEL_V8];
 	uint32_t be_idx = ucontrol->value.integer.value[0];
 	int i;
 
@@ -19729,7 +19732,7 @@ static int msm_routing_put_port_chmap_mixer(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 
-	for (i = 0; i < PCM_FORMAT_MAX_NUM_CHANNEL; i++) {
+	for (i = 0; i < PCM_FORMAT_MAX_NUM_CHANNEL_V8; i++) {
 		channel_map[i] = (char)(ucontrol->value.integer.value[i + 1]);
 		if (channel_map[i] > PCM_MAX_CHMAP_ID) {
 			pr_err("%s: Invalid channel map %d\n",
@@ -19745,7 +19748,7 @@ static int msm_routing_put_port_chmap_mixer(struct snd_kcontrol *kcontrol,
 static const struct snd_kcontrol_new port_multi_channel_map_mixer_controls[] = {
 	SOC_SINGLE_MULTI_EXT("Backend Device Channel Map", SND_SOC_NOPM, 0,
 			MSM_BACKEND_DAI_MAX, 0,
-			PCM_FORMAT_MAX_NUM_CHANNEL + 1, NULL,
+			PCM_FORMAT_MAX_NUM_CHANNEL_V8 + 1, NULL,
 			msm_routing_put_port_chmap_mixer),
 };
 
