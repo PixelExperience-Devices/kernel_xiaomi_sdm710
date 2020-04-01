@@ -4636,12 +4636,6 @@ struct reg_table_entry g_registry_table[] = {
 		CFG_CRASH_FW_TIMEOUT_DEFAULT,
 		CFG_CRASH_FW_TIMEOUT_DISABLE,
 		CFG_CRASH_FW_TIMEOUT_ENABLE),
-	REG_VARIABLE(CFG_RX_WAKELOCK_TIMEOUT_NAME, WLAN_PARAM_Integer,
-		struct hdd_config, rx_wakelock_timeout,
-		VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
-		CFG_RX_WAKELOCK_TIMEOUT_DEFAULT,
-		CFG_RX_WAKELOCK_TIMEOUT_MIN,
-		CFG_RX_WAKELOCK_TIMEOUT_MAX),
 	REG_VARIABLE(CFG_SAP_CH_SWITCH_BEACON_CNT, WLAN_PARAM_Integer,
 		     struct hdd_config, sap_chanswitch_beacon_cnt,
 		     VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
@@ -7354,7 +7348,6 @@ static void hdd_cfg_print_action_oui(struct hdd_context *hdd_ctx)
 {
 #ifdef WLAN_DEBUG
 	struct hdd_config *config = hdd_ctx->config;
-#endif
 
 	hdd_debug("Name = [%s] value = [%u]",
 		  CFG_ENABLE_ACTION_OUI,
@@ -7391,6 +7384,7 @@ static void hdd_cfg_print_action_oui(struct hdd_context *hdd_ctx)
 	hdd_debug("Name = [%s] value = [%s]",
 		  CFG_ACTION_OUI_DISABLE_AGGRESSIVE_EDCA,
 		  config->action_oui_str[ACTION_OUI_DISABLE_AGGRESSIVE_EDCA]);
+#endif
 }
 
 /**
@@ -8670,106 +8664,106 @@ static void hdd_set_rx_mode_value(struct hdd_context *hdd_ctx)
 QDF_STATUS hdd_parse_config_ini(struct hdd_context *hdd_ctx)
 {
 	int status = 0;
-	int i = 0;
-	int retry = 0;
-	/** Pointer for firmware image data */
-	const struct firmware *fw = NULL;
-	char *buffer, *line, *pTemp = NULL;
-	size_t size;
-	char *name, *value;
-	/* cfgIniTable is static to avoid excess stack usage */
-	static struct hdd_cfg_entry cfgIniTable[MAX_CFG_INI_ITEMS];
-	QDF_STATUS qdf_status = QDF_STATUS_SUCCESS;
+        int i = 0;
+        int retry = 0;
+        /** Pointer for firmware image data */
+        const struct firmware *fw = NULL;
+        char *buffer, *line, *pTemp = NULL;
+        size_t size;
+        char *name, *value;
+        /* cfgIniTable is static to avoid excess stack usage */
+        static struct hdd_cfg_entry cfgIniTable[MAX_CFG_INI_ITEMS];
+        QDF_STATUS qdf_status = QDF_STATUS_SUCCESS;
 
-	memset(cfgIniTable, 0, sizeof(cfgIniTable));
+        memset(cfgIniTable, 0, sizeof(cfgIniTable));
 
-	do {
-		if (status == -EAGAIN)
-			msleep(HDD_CFG_REQUEST_FIRMWARE_DELAY);
+        do {
+                if (status == -EAGAIN)
+                        msleep(HDD_CFG_REQUEST_FIRMWARE_DELAY);
 
-		status = request_firmware(&fw, WLAN_INI_FILE,
-					  hdd_ctx->parent_dev);
+                status = request_firmware(&fw, WLAN_INI_FILE,
+                                          hdd_ctx->parent_dev);
 
-		retry++;
-	} while ((retry < HDD_CFG_REQUEST_FIRMWARE_RETRIES) &&
-		 (status == -EAGAIN));
+                retry++;
+        } while ((retry < HDD_CFG_REQUEST_FIRMWARE_RETRIES) &&
+                 (status == -EAGAIN));
 
-	if (status) {
-		hdd_alert("request_firmware failed %d", status);
-		qdf_status = QDF_STATUS_E_FAILURE;
-		goto config_exit;
-	}
-	if (!fw || !fw->data || !fw->size) {
-		hdd_alert("%s download failed", WLAN_INI_FILE);
-		qdf_status = QDF_STATUS_E_FAILURE;
-		goto config_exit;
-	}
+        if (status) {
+                hdd_alert("request_firmware failed %d", status);
+                qdf_status = QDF_STATUS_E_FAILURE;
+                goto config_exit;
+        }
+        if (!fw || !fw->data || !fw->size) {
+                hdd_alert("%s download failed", WLAN_INI_FILE);
+                qdf_status = QDF_STATUS_E_FAILURE;
+                goto config_exit;
+        }
 
-	hdd_debug("qcom_cfg.ini Size %zu", fw->size);
+        hdd_debug("qcom_cfg.ini Size %zu", fw->size);
 
-	buffer = (char *)qdf_mem_malloc(fw->size);
+        buffer = (char *)qdf_mem_malloc(fw->size);
 
-	if (NULL == buffer) {
-		hdd_err("qdf_mem_malloc failure");
-		release_firmware(fw);
-		return QDF_STATUS_E_NOMEM;
-	}
-	pTemp = buffer;
+        if (NULL == buffer) {
+                hdd_err("qdf_mem_malloc failure");
+                release_firmware(fw);
+                return QDF_STATUS_E_NOMEM;
+        }
+        pTemp = buffer;
 
-	qdf_mem_copy((void *)buffer, (void *)fw->data, fw->size);
-	size = fw->size;
+        qdf_mem_copy((void *)buffer, (void *)fw->data, fw->size);
+        size = fw->size;
 
-	while (buffer != NULL) {
-		line = get_next_line(buffer);
-		buffer = i_trim(buffer);
+        while (buffer != NULL) {
+                line = get_next_line(buffer);
+                buffer = i_trim(buffer);
 
-		hdd_debug("%s: item", buffer);
+                hdd_debug("%s: item", buffer);
 
-		if (strlen((char *)buffer) == 0 || *buffer == '#') {
-			buffer = line;
-			continue;
-		}
+                if (strlen((char *)buffer) == 0 || *buffer == '#') {
+                        buffer = line;
+                        continue;
+                }
 
-		if (strncmp(buffer, "END", 3) == 0)
-			break;
+                if (strncmp(buffer, "END", 3) == 0)
+                        break;
 
-		name = buffer;
-		while (*buffer != '=' && *buffer != '\0')
-			buffer++;
-		if (*buffer != '\0') {
-			*buffer++ = '\0';
-			i_trim(name);
-			if (strlen(name) != 0) {
-				buffer = i_trim(buffer);
-				if (strlen(buffer) > 0) {
-					value = buffer;
-					while (*buffer != '\0')
-						buffer++;
-					*buffer = '\0';
-					cfgIniTable[i].name = name;
-					cfgIniTable[i++].value = value;
-					if (i >= MAX_CFG_INI_ITEMS) {
-						hdd_err("Number of items in %s > %d",
-							WLAN_INI_FILE,
-							MAX_CFG_INI_ITEMS);
-						break;
-					}
-				}
-			}
-		}
-		buffer = line;
-	}
+                name = buffer;
+                while (*buffer != '=' && *buffer != '\0')
+                        buffer++;
+                if (*buffer != '\0') {
+                        *buffer++ = '\0';
+                        i_trim(name);
+                        if (strlen(name) != 0) {
+                                buffer = i_trim(buffer);
+                                if (strlen(buffer) > 0) {
+                                        value = buffer;
+                                        while (*buffer != '\0')
+                                                buffer++;
+                                        *buffer = '\0';
+                                        cfgIniTable[i].name = name;
+                                        cfgIniTable[i++].value = value;
+                                        if (i >= MAX_CFG_INI_ITEMS) {
+                                                hdd_err("Number of items in %s > %d",
+                                                        WLAN_INI_FILE,
+                                                        MAX_CFG_INI_ITEMS);
+                                                break;
+                                        }
+                                }
+                        }
+                }
+                buffer = line;
+        }
 
-	/* Loop through the registry table and apply all these configs */
-	qdf_status = hdd_apply_cfg_ini(hdd_ctx, cfgIniTable, i);
-	hdd_set_rx_mode_value(hdd_ctx);
-	if (QDF_GLOBAL_MONITOR_MODE == cds_get_conparam())
-		hdd_override_all_ps(hdd_ctx);
+        /* Loop through the registry table and apply all these configs */
+        qdf_status = hdd_apply_cfg_ini(hdd_ctx, cfgIniTable, i);
+        hdd_set_rx_mode_value(hdd_ctx);
+        if (QDF_GLOBAL_MONITOR_MODE == cds_get_conparam())
+                hdd_override_all_ps(hdd_ctx);
 
 config_exit:
-	release_firmware(fw);
-	qdf_mem_free(pTemp);
-	return qdf_status;
+        release_firmware(fw);
+        qdf_mem_free(pTemp);
+        return qdf_status;
 }
 
 /**

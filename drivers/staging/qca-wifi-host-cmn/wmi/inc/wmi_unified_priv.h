@@ -22,6 +22,7 @@
  */
 #ifndef _WMI_UNIFIED_PRIV_H_
 #define _WMI_UNIFIED_PRIV_H_
+
 #include <osdep.h>
 #include "wmi_unified_api.h"
 #include "wmi_unified_param.h"
@@ -58,7 +59,9 @@
 
 #define WMI_UNIFIED_MAX_EVENT 0x100
 
-#ifdef WMI_INTERFACE_EVENT_LOGGING
+#ifdef WLAN_FEATURE_NAN_CONVERGENCE
+#include "nan_public_structs.h"
+#endif
 
 #ifndef WMI_EVENT_DEBUG_MAX_ENTRY
 #define WMI_EVENT_DEBUG_MAX_ENTRY (1024)
@@ -201,8 +204,6 @@ struct wmi_debug_log_info {
 	struct dentry *wmi_log_debugfs_dir;
 	uint8_t wmi_instance_id;
 };
-
-#endif /*WMI_INTERFACE_EVENT_LOGGING */
 
 #ifdef WLAN_OPEN_SOURCE
 struct fwdebug {
