@@ -28,12 +28,9 @@
 #include <linux/micrel_phy.h>
 #include <linux/of.h>
 #include <linux/clk.h>
-<<<<<<< HEAD
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
-=======
 #include <linux/delay.h>
->>>>>>> 6ee8be4d80ffb3dcf02b7a9eb3c908deae907c5d
 
 /* Operation Mode Strap Override */
 #define MII_KSZPHY_OMSO				0x16
