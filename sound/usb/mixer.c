@@ -1071,6 +1071,14 @@ static void volume_control_quirks(struct usb_mixer_elem_info *cval,
 						(cval->control << 8) | 2, 7936);
 		break;
 
+  case USB_ID(0x0495, 0x3042): /* ESS Technology Asus USB DAC */
+    if ((strstr(kctl->id.name, "Playback Volume") != NULL) ||
+      strstr(kctl->id.name, "Capture Volume") != NULL) {
+      cval->min >>= 8;
+      cval->max = 0;
+      cval->res = 1;
+    }
+    break;
 	}
 }
 
@@ -1209,7 +1217,7 @@ static int mixer_ctl_feature_info(struct snd_kcontrol *kcontrol,
 		if (!cval->initialized) {
 			get_min_max_with_quirks(cval, 0, kcontrol);
 			if (cval->initialized && cval->dBmin >= cval->dBmax) {
-				kcontrol->vd[0].access &= 
+				kcontrol->vd[0].access &=
 					~(SNDRV_CTL_ELEM_ACCESS_TLV_READ |
 					  SNDRV_CTL_ELEM_ACCESS_TLV_CALLBACK);
 				snd_ctl_notify(cval->head.mixer->chip->card,
