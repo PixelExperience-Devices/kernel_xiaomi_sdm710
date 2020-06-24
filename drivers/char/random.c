@@ -2128,9 +2128,18 @@ u64 get_random_u64(void)
 	u64 ret;
 	struct batched_entropy *batch;
 
-  batch = &get_cpu_var(batched_entropy_u64);
-  if (batch->position % ARRAY_SIZE(batch->entropy_u64) == 0) {
-    extract_crng((u8 *)batch->entropy_u64);
+#if BITS_PER_LONG == 64
+	if (arch_get_random_long((unsigned long *)&ret))
+		return ret;
+#else
+	if (arch_get_random_long((unsigned long *)&ret) &&
+	    arch_get_random_long((unsigned long *)&ret + 1))
+	    return ret;
+#endif
+
+	batch = &get_cpu_var(batched_entropy_u64);
+	if (batch->position % ARRAY_SIZE(batch->entropy_u64) == 0) {
+		extract_crng((u8 *)batch->entropy_u64);
 		batch->position = 0;
 	}
 	ret = batch->entropy_u64[batch->position++];
@@ -2145,9 +2154,12 @@ u32 get_random_u32(void)
 	u32 ret;
 	struct batched_entropy *batch;
 
-  batch = &get_cpu_var(batched_entropy_u32);
-  if (batch->position % ARRAY_SIZE(batch->entropy_u32) == 0) {
-    extract_crng((u8 *)batch->entropy_u32);
+	if (arch_get_random_int(&ret))
+		return ret;
+
+	batch = &get_cpu_var(batched_entropy_u32);
+	if (batch->position % ARRAY_SIZE(batch->entropy_u32) == 0) {
+		extract_crng((u8 *)batch->entropy_u32);
 		batch->position = 0;
 	}
 	ret = batch->entropy_u32[batch->position++];
