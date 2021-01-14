@@ -1422,6 +1422,10 @@ const struct regdomain regdomains_5g[] = {
 							       CHAN_5735_5875_4}
 							       },
 
+	[ETSI16] = {CTL_ETSI, DFS_UNINIT_REG, 2, 0, 2, {CHAN_5170_5250_11,
+							       CHAN_5735_5875_4}
+							       },
+
 	[APL1] = {CTL_ETSI, DFS_UNINIT_REG, 2, 0, 1, {CHAN_5735_5835_2} },
 
 	[APL2] = {CTL_ETSI, DFS_UNINIT_REG, 2, 0, 1, {CHAN_5735_5815_4} },
