@@ -23,6 +23,10 @@
 #include <linux/pm_qos.h>
 #include <soc/qcom/socinfo.h>
 
+#define HARDWARE_PLATFORM_SIRIUS 2
+#define HARDWARE_PLATFORM_PYXIS  4
+#define HARDWARE_PLATFORM_VELA  7
+
 #define __CHIPSET__ "SDM660 "
 #define MSM_DAILINK_NAME(name) (__CHIPSET__#name)
 
