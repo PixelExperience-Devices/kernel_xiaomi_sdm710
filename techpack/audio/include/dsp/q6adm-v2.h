@@ -208,5 +208,4 @@ int crus_adm_get_params(int port_id, int copp_idx, uint32_t module_id,
 							uint32_t params_length,
 							uint32_t client_id);
 #endif
-
 #endif /* __Q6_ADM_V2_H__ */
