@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2021 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -271,7 +271,7 @@ util_scan_get_chan_from_he_6g_params(struct wlan_objmgr_pdev *pdev,
 						band_mask);
 	if (scan_obj->drop_bcn_on_invalid_freq &&
 	    wlan_reg_is_disable_for_freq(pdev, *chan_freq)) {
-		scm_debug_rl("%pM: Drop as invalid channel %d freq %d in HE 6Ghz params",
+		scm_debug_rl(QDF_MAC_ADDR_FMT": Drop as invalid channel %d freq %d in HE 6Ghz params",
 			     scan_params->bssid.bytes,
 			     he_6g_params->primary_channel, *chan_freq);
 		return QDF_STATUS_E_INVAL;
@@ -584,12 +584,18 @@ util_scan_parse_chan_switch_wrapper_ie(struct scan_cache_entry *scan_params,
 		}
 		switch (sub_ie->ie_id) {
 		case WLAN_ELEMID_COUNTRY:
+			if (sub_ie->ie_len < WLAN_COUNTRY_IE_MIN_LEN)
+				return QDF_STATUS_E_INVAL;
 			scan_params->ie_list.country = (uint8_t *)sub_ie;
 			break;
 		case WLAN_ELEMID_WIDE_BAND_CHAN_SWITCH:
+			if (sub_ie->ie_len != WLAN_WIDE_BW_CHAN_SWITCH_IE_LEN)
+				return QDF_STATUS_E_INVAL;
 			scan_params->ie_list.widebw = (uint8_t *)sub_ie;
 			break;
 		case WLAN_ELEMID_VHT_TX_PWR_ENVLP:
+			if (sub_ie->ie_len > WLAN_TPE_IE_MAX_LEN)
+				return QDF_STATUS_E_INVAL;
 			scan_params->ie_list.txpwrenvlp = (uint8_t *)sub_ie;
 			break;
 		}
@@ -713,7 +719,12 @@ util_scan_parse_rnr_ie(struct scan_cache_entry *scan_entry,
 		scm_debug("tbtt_count %d, tbtt_length %d, fieldtype %d",
 			  tbtt_count, tbtt_length, fieldtype);
 		data += sizeof(struct neighbor_ap_info_field);
-		for (i = 0; i < (tbtt_count + 1) ; i++) {
+
+		if (tbtt_count > TBTT_INFO_COUNT)
+			break;
+
+		for (i = 0; i < (tbtt_count + 1) &&
+		     data < ((uint8_t *)ie + rnr_ie_len + 2); i++) {
 			if (i < MAX_RNR_BSS)
 				util_scan_update_rnr(
 					&scan_entry->rnr.bss_info[i],
@@ -734,6 +745,8 @@ util_scan_parse_extn_ie(struct scan_cache_entry *scan_params,
 
 	switch (extn_ie->ie_extn_id) {
 	case WLAN_EXTN_ELEMID_MAX_CHAN_SWITCH_TIME:
+		if (extn_ie->ie_len != WLAN_MAX_CHAN_SWITCH_TIME_IE_LEN)
+			return QDF_STATUS_E_INVAL;
 		scan_params->ie_list.mcst  = (uint8_t *)ie;
 		break;
 	case WLAN_EXTN_ELEMID_SRP:
@@ -843,7 +856,8 @@ util_scan_parse_vendor_ie(struct scan_cache_entry *scan_params,
 		 * Bandwidth-NSS map has sub-type & version.
 		 * hence copy data just after version byte
 		 */
-		scan_params->ie_list.bwnss_map = (((uint8_t *)ie) + 8);
+		if (ie->ie_len > WLAN_BWNSS_MAP_OFFSET)
+			scan_params->ie_list.bwnss_map = (((uint8_t *)ie) + 8);
 	} else if (is_mbo_oce_oui((uint8_t *)ie)) {
 		scan_params->ie_list.mbo_oce = (uint8_t *)ie;
 	} else if (is_extender_oui((uint8_t *)ie)) {
@@ -904,8 +918,15 @@ util_scan_populate_bcn_ie_list(struct wlan_objmgr_pdev *pdev,
 		}
 
 		if (ie_len < ie->ie_len) {
-			scm_debug("Incomplete corrupted IE:%x",
-				ie->ie_id);
+			if (scan_obj->allow_bss_with_incomplete_ie) {
+				scm_debug(QDF_MAC_ADDR_FMT": Scan allowed with incomplete corrupted IE:%x, ie_len: %d, ie->ie_len: %d, stop processing further",
+					  QDF_MAC_ADDR_REF(scan_params->bssid.bytes),
+					  ie->ie_id, ie_len, ie->ie_len);
+				break;
+			}
+			scm_debug(QDF_MAC_ADDR_FMT": Scan not allowed with incomplete corrupted IE:%x, ie_len: %d, ie->ie_len: %d, stop processing further",
+				  QDF_MAC_ADDR_REF(scan_params->bssid.bytes),
+				  ie->ie_id, ie_len, ie->ie_len);
 			return QDF_STATUS_E_INVAL;
 		}
 
@@ -932,7 +953,7 @@ util_scan_populate_bcn_ie_list(struct wlan_objmgr_pdev *pdev,
 			/* Drop if invalid freq */
 			if (scan_obj->drop_bcn_on_invalid_freq &&
 			    wlan_reg_is_disable_for_freq(pdev, *chan_freq)) {
-				scm_debug_rl("%pM: Drop as invalid channel %d freq %d in DS IE",
+				scm_debug_rl(QDF_MAC_ADDR_FMT": Drop as invalid channel %d freq %d in DS IE",
 					     scan_params->bssid.bytes,
 					     chan_idx, *chan_freq);
 				return QDF_STATUS_E_INVAL;
@@ -1020,7 +1041,7 @@ util_scan_populate_bcn_ie_list(struct wlan_objmgr_pdev *pdev,
 			/* Drop if invalid freq */
 			if (scan_obj->drop_bcn_on_invalid_freq &&
 			    wlan_reg_is_disable_for_freq(pdev, *chan_freq)) {
-				scm_debug_rl("%pM: Drop as invalid channel %d freq %d in HT_INFO IE",
+				scm_debug_rl(QDF_MAC_ADDR_FMT": Drop as invalid channel %d freq %d in HT_INFO IE",
 					     scan_params->bssid.bytes,
 					     chan_idx, *chan_freq);
 				return QDF_STATUS_E_INVAL;
@@ -1157,7 +1178,8 @@ static void util_scan_update_esp_data(struct wlan_esp_ie *esp_information,
 		return;
 	}
 
-	for (i = 0; i < total_elements; i++) {
+	for (i = 0; i < total_elements &&
+	     data < ((uint8_t *)esp_ie + esp_ie->esp_len + 3); i++) {
 		esp_info = (struct wlan_esp_info *)data;
 		if (esp_info->access_category == ESP_AC_BK) {
 			qdf_mem_copy(&esp_information->esp_info_AC_BK,
@@ -1556,7 +1578,7 @@ util_scan_gen_scan_entry(struct wlan_objmgr_pdev *pdev,
 	status = util_scan_populate_bcn_ie_list(pdev, scan_entry, &chan_freq,
 						band_mask);
 	if (QDF_IS_STATUS_ERROR(status)) {
-		scm_debug("%pM: failed to parse beacon IE",
+		scm_debug(QDF_MAC_ADDR_FMT": failed to parse beacon IE",
 			  scan_entry->bssid.bytes);
 		qdf_mem_free(scan_entry->raw_frame.ptr);
 		qdf_mem_free(scan_entry);
