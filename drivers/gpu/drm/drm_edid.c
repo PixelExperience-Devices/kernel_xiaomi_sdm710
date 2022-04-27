@@ -2447,7 +2447,7 @@ do_inferred_modes(struct detailed_timing *timing, void *c)
 	closure->modes += drm_dmt_modes_for_range(closure->connector,
 						  closure->edid,
 						  timing);
-	
+
 	if (!version_greater(closure->edid, 1, 1))
 		return; /* GTF not defined yet */
 
@@ -2687,7 +2687,7 @@ do_cvt_mode(struct detailed_timing *timing, void *c)
 
 static int
 add_cvt_modes(struct drm_connector *connector, struct edid *edid)
-{	
+{
 	struct detailed_mode_closure closure = {
 		.connector = connector,
 		.edid = edid,
@@ -3859,7 +3859,7 @@ void drm_edid_get_monitor_name(struct edid *edid, char *name, int bufsize)
 {
 	int name_length;
 	char buf[13];
-	
+
 	if (bufsize <= 0)
 		return;
 
@@ -4310,16 +4310,8 @@ static void drm_parse_hdmi_deep_color_info(struct drm_connector *connector,
 		  connector->name, dc_bpc);
 	info->bpc = dc_bpc;
 
-	/*
-	 * Deep color support mandates RGB444 support for all video
-	 * modes and forbids YCRCB422 support for all video modes per
-	 * HDMI 1.3 spec.
-	 */
-	info->color_formats |= DRM_COLOR_FORMAT_DC_RGB444;
-
 	/* YCRCB444 is optional according to spec. */
 	if (hdmi[6] & DRM_EDID_HDMI_DC_Y444) {
-		info->color_formats |= DRM_COLOR_FORMAT_DC_YCRCB444;
 		DRM_DEBUG("%s: HDMI sink does YCRCB444 in deep color.\n",
 			  connector->name);
 	}
