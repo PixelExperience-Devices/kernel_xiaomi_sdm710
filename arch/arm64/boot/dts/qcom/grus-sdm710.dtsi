@@ -866,11 +866,5 @@
 		vbmeta {
 			parts = "vbmeta,boot,system,vendor,dtbo,recovery";
 		};
-
-		fstab {
-			system {
-				status = "disabled";
-			};
-		};
 	};
 };
