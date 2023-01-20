@@ -1,0 +1,42 @@
+
+## 
+## def stock config
+##
+
+## 1. 1st try - gcc 9 and osm0sis. 
+## 2. gcc 10 - defonfig without cec
+#
+
+
+name: build p9xis kernel. zoe
+on:
+  push:
+    branches: eleven
+  workflow_dispatch:
+jobs:
+  build:
+    name: build p9xis kernel. zoe
+    runs-on: ubuntu-latest
+    steps:
+    - name: "Checkout kernel source"
+      uses: actions/checkout@v3
+    - name: "Checkout zipper"
+      uses: actions/checkout@v3
+      with:
+        repository: yoptah/AnyKernel3
+        path: zipper
+    - name: Android kernel build
+      id: build
+      uses: yoptah/kernel-actions@master
+      with:
+        arch: arm64
+        compiler: gcc/10
+        defconfig: pystock_defconfig
+        image: Image.gz-dtb
+    - name: Release build
+      uses: appleboy/telegram-action@master
+      with:
+        to: 331736579
+        token: 5854831952:AAE1k4nsYC0u-w_AQX1hYP3m5RLAJeMtm_c
+        message: zoe kernel is built!, took ${{ steps.build.outputs.elapsed_time }} seconds.
+        document: ${{ steps.build.outputs.outfile }
